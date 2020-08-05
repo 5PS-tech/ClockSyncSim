@@ -34,10 +34,6 @@ def sim_plot(df, node_count):
 
     print("Plot Setup Commencing...")
 
-    # combs = list(combinations(range(node_count),2))
-    # print(combs)
-    #
-    #
     combs = sum(1 for pair in combinations(range(node_count),2))
 
     for comb, t in enumerate(combinations(range(node_count),2)):
