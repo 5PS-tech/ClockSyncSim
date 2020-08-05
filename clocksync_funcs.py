@@ -53,11 +53,11 @@ def clock_sync_sim(freq_tolerance=.5, adjustment_func=daisy_adj, clock_freq = 40
     df['Node Reporting'] = df.index%node_count
 
     nodes_ref = list(range(node_count))
-    nodes_ref.insert(0, nodes_ref.pop())
 
     for i in df.index:
         reporting_node = df.loc[i,'Node Reporting']
-        comparison_node = nodes_ref[reporting_node]
+        comparison_nodes = nodes_ref.copy()
+        comparison_nodes.remove(reporting_node)
 
         for j in range(node_count):
             if i == 0:
@@ -66,16 +66,18 @@ def clock_sync_sim(freq_tolerance=.5, adjustment_func=daisy_adj, clock_freq = 40
                 prev_time = df.loc[i-1,str(j)]
                 df.loc[i,str(j)] = prev_time + local_increment(clock_freq,timeslot_period,freq_tolerance)
 
-        df.loc[i,str(comparison_node)] = df.loc[i,str(comparison_node)] + adjustment_func(df, i, reporting_node, comparison_node, r)
+        for comparison_node in comparison_nodes:
+            df.loc[i,str(comparison_node)] = df.loc[i,str(comparison_node)] + adjustment_func(df, i, reporting_node, comparison_node, r)
 
 
     fmax=clock_freq*(1+freq_tolerance/100) # Max freq per error
     fmin=clock_freq*(1-freq_tolerance/100) # Min freq per error
 
-    max_dev = math.ceil(abs(2*timeslot_period*node_count*(fmin-fmax)))
+    # max_dev = rho(max drift rate) * R(resync interval) * 2 * r
+    max_dev = math.ceil(abs(2*r*timeslot_period*(fmin-fmax)))
+    nominal_tick_length = (max_dev/clock_freq)*(10**6)
 
-    # print("Bounds for microticks per timeslot: ({}, {}) microticks".format(fmin,fmax))
-    print("Maximum Deviation: +/- {} ticks".format(max_dev))
+    print("Maximum Deviation: +/- {} ticks ({} usec at nominal frequency)".format(max_dev,nominal_tick_length))
 
     sim_plot(df, node_count)
     return df
